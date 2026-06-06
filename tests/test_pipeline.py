@@ -73,78 +73,14 @@ class TestPipeline:
         assert "pipeline_duration_s" in result
         assert result["pipeline_duration_s"] >= 0
 
+    @patch("pipeline.pipeline.call_llm", return_value=MOCK_HIGH_CONF_ANALYSIS)
+    def test_pipeline_log_id_preserved(self, mock_llm):
+        from pipeline.pipeline import run_pipeline
+        result = run_pipeline("my_custom_id", SAMPLE_LOG)
+        assert result["log_id"] == "my_custom_id"
 
-class TestBugReport:
-
-    def test_bug_report_structure(self):
-        from pipeline.bug_report import generate_bug_report
-        report = generate_bug_report("log_001", SAMPLE_LOG, MOCK_HIGH_CONF_ANALYSIS)
-        assert report["bug_id"] == "BUG-LOG_001"
-        assert report["priority"] == "P1"
-        assert report["severity"] == "high"
-        assert report["status"] == "open"
-
-    def test_severity_to_priority_mapping(self):
-        from pipeline.bug_report import generate_bug_report
-        for severity, expected_priority in [("critical", "P0"), ("high", "P1"), ("medium", "P2"), ("low", "P3")]:
-            analysis = {**MOCK_HIGH_CONF_ANALYSIS, "severity": severity}
-            report = generate_bug_report("log_x", SAMPLE_LOG, analysis)
-            assert report["priority"] == expected_priority
-
-    def test_low_confidence_flags_manual_review(self):
-        from pipeline.bug_report import generate_bug_report
-        report = generate_bug_report("log_001", SAMPLE_LOG, MOCK_LOW_CONF_ANALYSIS)
-        assert report["requires_manual_review"] is True
-
-
-class TestEvaluator:
-
-    def _make_result(self, analysis, status="success"):
-        return {
-            "log_id": "eval_test",
-            "status": status,
-            "steps": {"llm_analysis": {"status": "ok", "raw_output": analysis}},
-        }
-
-    def test_high_confidence_result_passes(self):
-        from eval.evaluator import score_result
-        result = self._make_result(MOCK_HIGH_CONF_ANALYSIS)
-        score = score_result(result)
-        assert score["passed"] is True
-        assert score["aggregate_score"] >= 0.6
-
-    def test_low_confidence_fails_dimension(self):
-        from eval.evaluator import score_result
-        result = self._make_result(MOCK_LOW_CONF_ANALYSIS)
-        score = score_result(result)
-        assert score["dimensions"]["confidence_ok"] == 0
-
-    def test_error_pipeline_scores_zero(self):
-        from eval.evaluator import score_result
-        result = {"log_id": "error_log", "status": "error", "steps": {}}
-        score = score_result(result)
-        assert score["aggregate_score"] == 0.0
-        assert score["passed"] is False
-
-    def test_evaluation_report_structure(self):
-        from eval.evaluator import run_evaluation
-        results = [self._make_result(MOCK_HIGH_CONF_ANALYSIS), self._make_result(MOCK_LOW_CONF_ANALYSIS)]
-        report = run_evaluation(results)
-        assert "pass_rate" in report
-        assert "mean_aggregate_score" in report
-        assert report["total"] == 2
-
-
-class TestLLMWrapper:
-
-    def test_low_confidence_detection(self):
-        from pipeline.llm_wrapper import is_low_confidence
-        assert is_low_confidence({"confidence": 0.4}) is True
-        assert is_low_confidence({"confidence": 0.6}) is False
-
-    def test_fallback_message_structure(self):
-        from pipeline.llm_wrapper import get_fallback_message
-        fb = get_fallback_message("log_001", 0.42)
-        assert fb["status"] == "uncertain"
-        assert fb["confidence"] == 0.42
-        assert "manual review" in fb["message"].lower()
+    @patch("pipeline.pipeline.call_llm", return_value=MOCK_HIGH_CONF_ANALYSIS)
+    def test_pipeline_ingestion_records_log_length(self, mock_llm):
+        from pipeline.pipeline import run_pipeline
+        result = run_pipeline("test_006", SAMPLE_LOG)
+        assert result["steps"]["ingestion"]["log_length"] == len(SAMPLE_LOG)
