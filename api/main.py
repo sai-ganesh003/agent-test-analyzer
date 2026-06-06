@@ -26,8 +26,8 @@ app = FastAPI(
 
 
 class AnalyzeRequest(BaseModel):
-    log_id: str = Field(..., example="log_001")
-    log: str = Field(..., example="ERROR: DatabaseConnectionError...")
+    log_id: str = Field(..., json_schema_extra={"example": "log_001"})
+    log: str = Field(..., json_schema_extra={"example": "ERROR: DatabaseConnectionError..."})
 
 
 @app.get("/health")
