@@ -17,7 +17,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 REQUIRED_FIELDS = {"root_cause", "fix", "severity", "confidence", "summary"}
-CONFIDENCE_THRESHOLD = 0.6
+from config import CONFIDENCE_THRESHOLD, LLM_RETRY_COUNT, LLM_TIMEOUT, LLM_TEMPERATURE, LLM_MAX_TOKENS
 API_KEY = os.getenv("GOOGLE_API_KEY")
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
 
@@ -43,7 +43,7 @@ Rules:
 """
 
 
-def call_llm(log_text: str, retries: int = 2) -> dict:
+def call_llm(log_text: str, retries: int = LLM_RETRY_COUNT) -> dict:
     attempt = 0
     last_error = None
 
@@ -63,8 +63,8 @@ def call_llm(log_text: str, retries: int = 2) -> dict:
                     }
                 ],
                 "generationConfig": {
-                    "temperature": 0.2,
-                    "maxOutputTokens": 1000,
+                    "temperature": LLM_TEMPERATURE,
+                    "maxOutputTokens": LLM_MAX_TOKENS,
                 }
             }
 
@@ -76,7 +76,7 @@ def call_llm(log_text: str, retries: int = 2) -> dict:
                 method="POST"
             )
 
-            with urllib.request.urlopen(req, timeout=30) as response:
+            with urllib.request.urlopen(req, timeout=LLM_TIMEOUT) as response:
                 raw_response = json.loads(response.read().decode("utf-8"))
 
             raw_text = raw_response["candidates"][0]["content"]["parts"][0]["text"].strip()

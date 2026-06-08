@@ -5,12 +5,13 @@ Evaluation system for agent output quality.
 
 import logging
 from datetime import datetime, timezone
+from config import EVAL_MIN_CONFIDENCE
+
 
 logger = logging.getLogger(__name__)
 
 VALID_SEVERITIES = {"critical", "high", "medium", "low"}
-MIN_CONFIDENCE = 0.5
-
+MIN_CONFIDENCE = EVAL_MIN_CONFIDENCE
 
 def score_result(result: dict) -> dict:
     log_id = result.get("log_id", "unknown")

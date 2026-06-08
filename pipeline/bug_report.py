@@ -5,6 +5,7 @@ Transforms LLM analysis into a structured bug report.
 
 import logging
 from datetime import datetime, timezone
+from config import CONFIDENCE_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ def generate_bug_report(log_id: str, raw_log: str, analysis: dict) -> dict:
         "source_log_snippet": raw_log.strip()[:500] + ("..." if len(raw_log.strip()) > 500 else ""),
         "filed_at": datetime.now(timezone.utc).isoformat(),
         "status": "open",
-        "requires_manual_review": analysis.get("confidence", 0.0) < 0.6,
+        "requires_manual_review": analysis.get("confidence", 0.0) < CONFIDENCE_THRESHOLD,
     }
 
     logger.info(f"[{log_id}] Bug report generated — Priority: {priority}, Severity: {severity}")
