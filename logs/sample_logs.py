@@ -117,4 +117,135 @@ Upstream producer changed schema: field 'uid' renamed to 'user_id' without migra
 Failed rows: 14,302. Pipeline halted.
 """
     },
+    {
+        "id": "log_011",
+        "log": """
+ERROR 2026-05-04 08:12:44 [api-server] SSL handshake failed for outbound request
+  File "lib/http_client.py", line 88, in post
+    response = session.post(url, timeout=10)
+  File "lib/http_client.py", line 61, in _make_request
+    raise SSLError("certificate verify failed: unable to get local issuer certificate")
+ssl.SSLError: certificate verify failed: unable to get local issuer certificate
+Target: https://payments.external-provider.com/v2/charge
+Last successful request: 2026-05-03 23:59:01. Certificate expiry: 2026-05-04 00:00:00.
+"""
+    },
+    {
+        "id": "log_012",
+        "log": """
+CRITICAL 2026-05-04 11:33:07 [k8s-node-02] Container OOM killed: worker-pod-7f9d
+  Container: celery-worker
+  Namespace: production
+  OOMKilled: true
+  Memory limit: 512Mi
+  Memory usage at kill: 511Mi
+  Last task: process_video_transcode — input file size 2.1GB
+  Node: k8s-node-02 (8GB total, 7.1GB used across pods)
+Recommendation: increase memory limit or add file size validation before task dispatch.
+"""
+    },
+    {
+        "id": "log_013",
+        "log": """
+ERROR 2026-05-04 14:05:19 [app-startup] Circular import detected during module initialization
+  File "app/__init__.py", line 3, in <module>
+    from app.models import User
+  File "app/models/__init__.py", line 5, in <module>
+    from app.services.auth import get_current_user
+  File "app/services/auth.py", line 2, in <module>
+    from app.models import User
+ImportError: cannot import name 'User' from partially initialized module 'app.models'
+Application failed to start. All workers exiting.
+"""
+    },
+    {
+        "id": "log_014",
+        "log": """
+ERROR 2026-05-05 09:44:31 [payment-service] Third-party API rate limit exceeded
+  File "services/payment.py", line 67, in charge_customer
+    response = stripe_client.charge(amount, currency, source)
+  File "lib/stripe_wrapper.py", line 44, in charge
+    raise RateLimitError("Stripe API: 429 Too Many Requests")
+stripe.error.RateLimitError: Request rate limit reached for charges endpoint
+Requests in last 60s: 102. Stripe limit: 100/min.
+Affected transactions: 47 pending. Retry queue: not implemented.
+"""
+    },
+    {
+        "id": "log_015",
+        "log": """
+CRITICAL 2026-05-05 13:21:08 [app-startup] Required config file missing at startup
+  File "app/config_loader.py", line 22, in load
+    with open(config_path) as f:
+FileNotFoundError: [Errno 2] No such file or directory: '/etc/app/production.yaml'
+Environment: production
+Expected config path: /etc/app/production.yaml
+CONFIG_PATH env var: not set — falling back to default path which does not exist.
+All 4 worker processes failed to start.
+"""
+    },
+    {
+        "id": "log_016",
+        "log": """
+ERROR 2026-05-06 02:17:55 [report-worker] Thread deadlock detected — worker unresponsive
+  Thread dump:
+    Thread-12 waiting for lock: db_write_lock (held by Thread-9)
+    Thread-9 waiting for lock: cache_flush_lock (held by Thread-12)
+  Deadlock duration: >120s
+  Watchdog triggered forced thread termination.
+  File "workers/report.py", line 203, in flush_and_write
+    with db_write_lock: cache.flush()
+Last completed task: 2026-05-06 02:15:33. 14 tasks dropped from queue.
+"""
+    },
+    {
+        "id": "log_017",
+        "log": """
+ERROR 2026-05-06 07:58:14 [email-service] DNS resolution failure for SMTP host
+  File "services/email.py", line 38, in send
+    server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10)
+  File "lib/smtp_wrapper.py", line 19, in connect
+    raise ConnectionError(f"DNS lookup failed for host: {SMTP_HOST}")
+socket.gaierror: [Errno -2] Name or service not known
+SMTP_HOST: mail.internal.company.net
+Failure started: 2026-05-06 07:45:00. 1,203 emails queued. DNS change deployed at 07:44:12.
+"""
+    },
+    {
+        "id": "log_018",
+        "log": """
+ERROR 2026-05-07 10:09:37 [file-processor] Permission denied writing to output directory
+  File "processors/file_handler.py", line 55, in save_output
+    with open(output_path, 'wb') as f:
+PermissionError: [Errno 13] Permission denied: '/var/app/outputs/report_4421.pdf'
+Process user: app-worker (uid=1001)
+Directory owner: root (uid=0). Permissions: drwxr-x--- (750)
+Last successful write: 2026-05-06 18:00:00. Deployment at 2026-05-07 09:55:00 changed directory ownership.
+"""
+    },
+    {
+        "id": "log_019",
+        "log": """
+WARNING 2026-05-07 15:44:02 [message-queue] Task queue overflow — dropping lowest priority tasks
+  Queue: celery-low-priority
+  Max size: 10,000 tasks
+  Current size: 10,000 tasks (100% full)
+  Producer rate: 850 tasks/min. Consumer rate: 120 tasks/min.
+  Tasks dropped in last 5 min: 3,650
+  Root cause: consumer workers scaled down from 20 to 3 during cost optimization at 14:00.
+"""
+    },
+    {
+        "id": "log_020",
+        "log": """
+CRITICAL 2026-05-08 04:30:19 [deployment] Rolling update stalled — health checks failing
+  Deployment: api-server v2.4.1 -> v2.4.2
+  Strategy: RollingUpdate (maxUnavailable=1, maxSurge=1)
+  New pods: 2/8 healthy. 6 pods crash-looping.
+  Health check: GET /health -> ConnectionRefused (port 8080 not open)
+  File "app/server.py", line 14, in startup
+    app.listen(port=int(os.getenv("PORT")))
+ValueError: invalid literal for int(): '' — PORT env var not set in new deployment config.
+"""
+    },
 ]
