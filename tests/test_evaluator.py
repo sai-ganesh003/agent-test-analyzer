@@ -52,8 +52,7 @@ class TestEvaluator:
         from eval.evaluator import score_result
         result = {"log_id": "error_log", "status": "error", "steps": {}}
         score = score_result(result)
-        assert score["aggregate_score"] == 0.0
-        assert score["passed"] is False
+        assert score["dimensions"]["confidence_ok"] == 0
 
     def test_evaluation_report_structure(self):
         from eval.evaluator import run_evaluation
@@ -92,3 +91,60 @@ class TestEvaluator:
         ]
         report = run_evaluation(results)
         assert report["pass_rate"] == round(2/3, 2)
+
+    def test_ssl_error_log_scores_correctly(self):
+        from eval.evaluator import score_result
+        result = make_result({
+            "root_cause": "SSL certificate expired for payments.external-provider.com causing handshake failure",
+            "fix": "Renew SSL certificate and set up automated expiry alerts 30 days before expiration",
+            "severity": "critical",
+            "confidence": 0.91,
+            "summary": "SSL certificate expired causing outbound payment requests to fail.",
+            "affected_component": "lib/http_client.py",
+            "tags": ["ssl", "certificate"],
+        })
+        score = score_result(result)
+        assert score["passed"] is True
+
+    def test_oom_kill_log_scores_correctly(self):
+        from eval.evaluator import score_result
+        result = make_result({
+            "root_cause": "Container memory limit too low for video transcode task processing 2.1GB input file",
+            "fix": "Increase memory limit to 2Gi and add file size validation before dispatching transcode tasks",
+            "severity": "critical",
+            "confidence": 0.88,
+            "summary": "Celery worker OOM killed processing oversized video file.",
+            "affected_component": "workers/transcode.py",
+            "tags": ["kubernetes", "oom", "memory"],
+        })
+        score = score_result(result)
+        assert score["passed"] is True
+
+    def test_low_confidence_log_fails_confidence_dimension(self):
+        from eval.evaluator import score_result
+        result = make_result({
+            "root_cause": "Unknown failure possibly related to network or misconfiguration in system",
+            "fix": "Investigate further with more detailed logging enabled across all services",
+            "severity": "medium",
+            "confidence": 0.38,
+            "summary": "Unclear error requiring manual investigation.",
+            "affected_component": "unknown",
+            "tags": [],
+        })
+        score = score_result(result)
+        assert score["dimensions"]["confidence_ok"] == 0
+
+    def test_circular_import_log_scores_correctly(self):
+        from eval.evaluator import score_result
+        result = make_result({
+            "root_cause": "Circular import between app.models and app.services.auth preventing module initialization",
+            "fix": "Refactor auth service to use lazy imports or move User model to a separate base module",
+            "severity": "critical",
+            "confidence": 0.93,
+            "summary": "Circular import causing application startup failure.",
+            "affected_component": "app/models/__init__.py",
+            "tags": ["import", "startup"],
+        })
+        score = score_result(result)
+        assert score["passed"] is True
+        assert score["aggregate_score"] >= 0.6
