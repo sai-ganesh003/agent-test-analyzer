@@ -84,3 +84,31 @@ class TestPipeline:
         from pipeline.pipeline import run_pipeline
         result = run_pipeline("test_006", SAMPLE_LOG)
         assert result["steps"]["ingestion"]["log_length"] == len(SAMPLE_LOG)
+
+    @patch("pipeline.pipeline.call_llm", return_value=MOCK_HIGH_CONF_ANALYSIS)
+    def test_pipeline_with_empty_log_text(self, mock_llm):
+        from pipeline.pipeline import run_pipeline
+        result = run_pipeline("test_007", "")
+        assert result["steps"]["ingestion"]["log_length"] == 0
+
+    @patch("pipeline.pipeline.call_llm", return_value=MOCK_HIGH_CONF_ANALYSIS)
+    def test_pipeline_with_very_long_log(self, mock_llm):
+        from pipeline.pipeline import run_pipeline
+        long_log = "ERROR: something failed\n" * 500
+        result = run_pipeline("test_008", long_log)
+        assert result["status"] == "success"
+        assert len(result["steps"]["ingestion"]["log_preview"]) <= 200
+
+    @patch("pipeline.pipeline.call_llm", return_value=MOCK_HIGH_CONF_ANALYSIS)
+    def test_pipeline_with_special_characters_in_log(self, mock_llm):
+        from pipeline.pipeline import run_pipeline
+        special_log = "ERROR: failed with chars !@#$%^&*()<>?/|{}~`"
+        result = run_pipeline("test_009", special_log)
+        assert result["status"] == "success"
+
+    @patch("pipeline.pipeline.call_llm", return_value=MOCK_HIGH_CONF_ANALYSIS)
+    def test_pipeline_with_numeric_log_id(self, mock_llm):
+        from pipeline.pipeline import run_pipeline
+        result = run_pipeline("12345", SAMPLE_LOG)
+        assert result["log_id"] == "12345"
+        assert result["bug_report"]["bug_id"] == "BUG-12345"
