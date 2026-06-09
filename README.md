@@ -59,6 +59,10 @@ python start_api.py
 ```
 Starts the FastAPI server at `http://localhost:8000`. Three endpoints — `GET /health`, `POST /analyze`, `POST /analyze/batch` (up to 20 logs).
 
+Live deployment: `http://13.60.2.124:8000`
+
+Swagger UI: `http://13.60.2.124:8000/docs`
+
 Example:
 ```bash
 curl -X POST http://localhost:8000/analyze \
